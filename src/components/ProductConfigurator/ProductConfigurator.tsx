@@ -490,17 +490,24 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           role="radiogroup"
           aria-label={option.name}
         >
-          {option.choices?.map((choice, index) => (
+          {option.choices?.map((choice) => (
             <div
-              key={index}
+              key={choice.id}
               className={`color-swatch ${currentValue === choice.value ? "selected" : ""}`}
               style={{ backgroundColor: choice.colorHex }}
               onClick={() =>
                 !readOnly && handleOptionChange(option.id, choice.value)
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleOptionChange(option.id, choice.value);
+                }
+              }}
               title={choice.label}
               role="radio"
               aria-checked={currentValue === choice.value}
+              tabIndex={0}
             />
           ))}
         </div>
@@ -569,6 +576,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
               !readOnly && handleOptionChange(option.id, !currentValue)
             }
             role="switch"
+            aria-label={option.name}
             aria-checked={currentValue}
             tabIndex={0}
             onKeyDown={(e) => {
@@ -612,9 +620,23 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
 
     return (
       <div
-        key={addOn.name}
+        key={addOn.id}
         className={`addon-item ${isSelected ? "selected" : ""} ${!isAvailable ? "disabled" : ""}`}
         onClick={() => !readOnly && isAvailable && handleAddOnToggle(addOn.id)}
+        onKeyDown={(e) => {
+          if (
+            (e.key === "Enter" || e.key === " ") &&
+            isAvailable &&
+            !readOnly
+          ) {
+            e.preventDefault();
+            handleAddOnToggle(addOn.id);
+          }
+        }}
+        role="checkbox"
+        aria-checked={isSelected}
+        aria-disabled={!isAvailable}
+        tabIndex={isAvailable && !readOnly ? 0 : -1}
       >
         <input
           type="checkbox"
