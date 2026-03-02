@@ -208,6 +208,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
 
     window.addEventListener("resize", handleResize);
     handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -674,10 +678,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           <span>{formatPrice(price.basePrice, product.currency)}</span>
         </div>
 
-        {price.optionModifiers.map((mod, i) => {
+        {price.optionModifiers.map((mod) => {
           const option = product.options.find((o) => o.id === mod.optionId);
           return (
-            <div className="price-line" key={i}>
+            <div className="price-line" key={`${mod.optionId}-${mod.amount}`}>
               <span>{option?.name || mod.optionId}</span>
               <span>
                 {mod.amount >= 0 ? "+" : ""}
@@ -687,10 +691,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           );
         })}
 
-        {price.addOnCosts.map((cost, i) => {
+        {price.addOnCosts.map((cost) => {
           const addOn = product.addOns.find((a) => a.id === cost.addOnId);
           return (
-            <div className="price-line" key={i}>
+            <div className="price-line" key={`${cost.addOnId}-${cost.amount}`}>
               <span>{addOn?.name || cost.addOnId}</span>
               <span>+{formatPrice(cost.amount, product.currency)}</span>
             </div>
@@ -901,8 +905,8 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
         </div>
       )}
 
-      {validation?.warnings.map((warning, i) => (
-        <div key={i} className="validation-warning">
+      {validation?.warnings.map((warning) => (
+        <div key={warning.code} className="validation-warning">
           {warning.message}
         </div>
       ))}
