@@ -9,13 +9,13 @@ import type {
   PreviewResponse,
   Draft,
   Product,
-} from '../components/ProductConfigurator/types';
-import { calculatePriceBreakdown } from '../utils/pricing';
+} from "../components/ProductConfigurator/types";
+import { calculatePriceBreakdown } from "../utils/pricing";
 
 // Simulate network latency - varies to mimic real conditions
 const randomDelay = (min: number, max: number): Promise<void> => {
   const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-  return new Promise(resolve => setTimeout(resolve, delay));
+  return new Promise((resolve) => setTimeout(resolve, delay));
 };
 
 // Track request IDs for debugging (and to create the race condition bug)
@@ -27,7 +27,7 @@ let requestCounter = 0;
  */
 export async function calculatePrice(
   config: Configuration,
-  product: Product
+  product: Product,
 ): Promise<PriceResponse> {
   const requestId = ++requestCounter;
 
@@ -49,12 +49,12 @@ export async function calculatePrice(
  */
 export async function validateConfiguration(
   config: Configuration,
-  product: Product
+  product: Product,
 ): Promise<ValidationResult> {
   await randomDelay(50, 150);
 
-  const errors: ValidationResult['errors'] = [];
-  const warnings: ValidationResult['warnings'] = [];
+  const errors: ValidationResult["errors"] = [];
+  const warnings: ValidationResult["warnings"] = [];
 
   // Check for dependency violations
   for (const option of product.options) {
@@ -64,7 +64,7 @@ export async function validateConfiguration(
 
       if (currentValue && dependencyValue !== option.dependsOn.requiredValue) {
         errors.push({
-          code: 'VALIDATION_CONFLICT_47',
+          code: "VALIDATION_CONFLICT_47",
           message: `${option.name} requires ${option.dependsOn.optionId} to be ${option.dependsOn.requiredValue}`,
           optionId: option.id,
         });
@@ -74,12 +74,12 @@ export async function validateConfiguration(
 
   // Check add-on dependencies
   for (const addOnId of config.addOns) {
-    const addOn = product.addOns.find(a => a.id === addOnId);
+    const addOn = product.addOns.find((a) => a.id === addOnId);
     if (addOn?.dependsOn) {
       const dependencyValue = config.selections[addOn.dependsOn.optionId];
       if (dependencyValue !== addOn.dependsOn.requiredValue) {
         errors.push({
-          code: 'ERR_DEP_MISSING_47',
+          code: "ERR_DEP_MISSING_47",
           message: `${addOn.name} requires ${addOn.dependsOn.optionId}`,
           optionId: addOnId,
         });
@@ -90,16 +90,16 @@ export async function validateConfiguration(
   // Check quantity limits
   if (config.quantity < 1) {
     errors.push({
-      code: 'ERR_INVALID_QTY',
-      message: 'Quantity must be at least 1',
+      code: "ERR_INVALID_QTY",
+      message: "Quantity must be at least 1",
     });
   }
 
   // Warning for high quantities (might want review)
   if (config.quantity > 47) {
     warnings.push({
-      code: 'WARN_HIGH_QTY',
-      message: 'Large orders may require additional processing time',
+      code: "WARN_HIGH_QTY",
+      message: "Large orders may require additional processing time",
     });
   }
 
@@ -115,7 +115,7 @@ export async function validateConfiguration(
  */
 export async function generatePreview(
   config: Configuration,
-  product: Product
+  product: Product,
 ): Promise<PreviewResponse> {
   await randomDelay(100, 300);
 
@@ -134,7 +134,7 @@ export async function generatePreview(
  */
 export async function saveDraft(
   config: Configuration,
-  name: string
+  name: string,
 ): Promise<Draft> {
   // Wrap in promise to maintain async interface (production would be async)
   return new Promise((resolve) => {
@@ -151,7 +151,7 @@ export async function saveDraft(
     // Add new draft (limit to 10 most recent)
     const updatedDrafts = [draft, ...existingDrafts].slice(0, 10);
 
-    localStorage.setItem('configureflow_drafts', JSON.stringify(updatedDrafts));
+    localStorage.setItem("configureflow_drafts", JSON.stringify(updatedDrafts));
 
     resolve(draft);
   });
@@ -163,7 +163,7 @@ export async function saveDraft(
 export async function loadDraft(draftId: string): Promise<Draft | null> {
   return new Promise((resolve) => {
     const drafts = getDraftsFromStorage();
-    const draft = drafts.find(d => d.id === draftId);
+    const draft = drafts.find((d) => d.id === draftId);
     resolve(draft || null);
   });
 }
@@ -183,10 +183,10 @@ export async function getAllDrafts(): Promise<Draft[]> {
 export async function deleteDraft(draftId: string): Promise<boolean> {
   return new Promise((resolve) => {
     const drafts = getDraftsFromStorage();
-    const filtered = drafts.filter(d => d.id !== draftId);
+    const filtered = drafts.filter((d) => d.id !== draftId);
 
     if (filtered.length !== drafts.length) {
-      localStorage.setItem('configureflow_drafts', JSON.stringify(filtered));
+      localStorage.setItem("configureflow_drafts", JSON.stringify(filtered));
       resolve(true);
     } else {
       resolve(false);
@@ -197,7 +197,7 @@ export async function deleteDraft(draftId: string): Promise<boolean> {
 // Helper: Get drafts from localStorage
 function getDraftsFromStorage(): Draft[] {
   try {
-    const stored = localStorage.getItem('configureflow_drafts');
+    const stored = localStorage.getItem("configureflow_drafts");
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -206,8 +206,8 @@ function getDraftsFromStorage(): Draft[] {
 
 // Helper: Format currency
 function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
     currency: currency,
   }).format(amount);
 }
@@ -222,22 +222,28 @@ export function encodeConfigurationToUrl(config: Configuration): string {
     q: config.quantity,
   });
 
-  return btoa(data);
+  const base64 = btoa(data);
+
+  return encodeURIComponent(base64);
 }
 
 /**
  * Decode configuration from URL string
  */
-export function decodeConfigurationFromUrl(encoded: string): Partial<Configuration> | null {
+export function decodeConfigurationFromUrl(
+  encoded: string,
+): Partial<Configuration> | null {
   try {
-    const data = JSON.parse(atob(encoded));
+    const base64 = decodeURIComponent(encoded);
+    const data = JSON.parse(atob(base64));
+
     return {
       selections: data.s || {},
       addOns: data.a || [],
       quantity: data.q || 1,
     };
   } catch (e) {
-    console.error('Failed to decode configuration:', e);
+    console.error("Failed to decode configuration:", e);
     return null;
   }
 }
