@@ -219,8 +219,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
         if (!cancelled) {
           setValidation(result);
         }
-      } catch {
-      }
+      } catch {}
     };
 
     validate();
@@ -307,8 +306,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           if (addOn.dependsOn && value !== addOn.dependsOn.requiredValue) {
             const index = selectedAddOns.indexOf(addOn.id);
             if (index > -1) {
-              selectedAddOns.splice(index, 1);
-              setSelectedAddOns(selectedAddOns);
+              setSelectedAddOns((prev) => prev.filter((id) => id !== addOn.id));
             }
           }
         }
@@ -407,8 +405,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   const handleCopyShareUrl = useCallback(() => {
     navigator.clipboard
       .writeText(shareUrl)
-      .then(() => {
-      })
+      .then(() => {})
       .catch(() => {
         setError(ERROR_CODES.UNKNOWN);
       });
@@ -919,9 +916,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
             className={`price-display ${isPriceLoading ? "price-loading" : ""}`}
           >
             <div className="price-label">Total Price</div>
-            <div className="price-value">
-              {formattedTotal}
-            </div>
+            <div className="price-value">{formattedTotal}</div>
 
             {renderPriceBreakdown()}
 
