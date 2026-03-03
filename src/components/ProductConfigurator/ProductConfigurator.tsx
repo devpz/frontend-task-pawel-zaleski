@@ -208,6 +208,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
 
     window.addEventListener("resize", handleResize);
     handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -219,8 +223,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
         if (!cancelled) {
           setValidation(result);
         }
-      } catch {
-      }
+      } catch {}
     };
 
     validate();
@@ -307,8 +310,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           if (addOn.dependsOn && value !== addOn.dependsOn.requiredValue) {
             const index = selectedAddOns.indexOf(addOn.id);
             if (index > -1) {
-              selectedAddOns.splice(index, 1);
-              setSelectedAddOns(selectedAddOns);
+              setSelectedAddOns((prev) => prev.filter((id) => id !== addOn.id));
             }
           }
         }
@@ -407,8 +409,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   const handleCopyShareUrl = useCallback(() => {
     navigator.clipboard
       .writeText(shareUrl)
-      .then(() => {
-      })
+      .then(() => {})
       .catch(() => {
         setError(ERROR_CODES.UNKNOWN);
       });
@@ -493,17 +494,24 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           role="radiogroup"
           aria-label={option.name}
         >
-          {option.choices?.map((choice, index) => (
+          {option.choices?.map((choice) => (
             <div
-              key={index}
+              key={choice.id}
               className={`color-swatch ${currentValue === choice.value ? "selected" : ""}`}
               style={{ backgroundColor: choice.colorHex }}
               onClick={() =>
                 !readOnly && handleOptionChange(option.id, choice.value)
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleOptionChange(option.id, choice.value);
+                }
+              }}
               title={choice.label}
               role="radio"
               aria-checked={currentValue === choice.value}
+              tabIndex={0}
             />
           ))}
         </div>
@@ -572,6 +580,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
               !readOnly && handleOptionChange(option.id, !currentValue)
             }
             role="switch"
+            aria-label={option.name}
             aria-checked={currentValue}
             tabIndex={0}
             onKeyDown={(e) => {
@@ -615,9 +624,23 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
 
     return (
       <div
-        key={addOn.name}
+        key={addOn.id}
         className={`addon-item ${isSelected ? "selected" : ""} ${!isAvailable ? "disabled" : ""}`}
         onClick={() => !readOnly && isAvailable && handleAddOnToggle(addOn.id)}
+        onKeyDown={(e) => {
+          if (
+            (e.key === "Enter" || e.key === " ") &&
+            isAvailable &&
+            !readOnly
+          ) {
+            e.preventDefault();
+            handleAddOnToggle(addOn.id);
+          }
+        }}
+        role="checkbox"
+        aria-checked={isSelected}
+        aria-disabled={!isAvailable}
+        tabIndex={isAvailable && !readOnly ? 0 : -1}
       >
         <input
           type="checkbox"
@@ -655,10 +678,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           <span>{formatPrice(price.basePrice, product.currency)}</span>
         </div>
 
-        {price.optionModifiers.map((mod, i) => {
+        {price.optionModifiers.map((mod) => {
           const option = product.options.find((o) => o.id === mod.optionId);
           return (
-            <div className="price-line" key={i}>
+            <div className="price-line" key={`${mod.optionId}-${mod.amount}`}>
               <span>{option?.name || mod.optionId}</span>
               <span>
                 {mod.amount >= 0 ? "+" : ""}
@@ -668,10 +691,10 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           );
         })}
 
-        {price.addOnCosts.map((cost, i) => {
+        {price.addOnCosts.map((cost) => {
           const addOn = product.addOns.find((a) => a.id === cost.addOnId);
           return (
-            <div className="price-line" key={i}>
+            <div className="price-line" key={`${cost.addOnId}-${cost.amount}`}>
               <span>{addOn?.name || cost.addOnId}</span>
               <span>+{formatPrice(cost.amount, product.currency)}</span>
             </div>
@@ -882,8 +905,8 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
         </div>
       )}
 
-      {validation?.warnings.map((warning, i) => (
-        <div key={i} className="validation-warning">
+      {validation?.warnings.map((warning) => (
+        <div key={warning.code} className="validation-warning">
           {warning.message}
         </div>
       ))}
@@ -919,9 +942,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
             className={`price-display ${isPriceLoading ? "price-loading" : ""}`}
           >
             <div className="price-label">Total Price</div>
-            <div className="price-value">
-              {formattedTotal}
-            </div>
+            <div className="price-value">{formattedTotal}</div>
 
             {renderPriceBreakdown()}
 
